@@ -8,6 +8,7 @@ import models
 from models import EventData
 from parsers.common_parser import EventsParser
 from parsers.utils import get_logger
+from parsers.utils import get_service_id
 from parsers.utils import get_today_dt
 from parsers.utils import retry
 
@@ -105,18 +106,24 @@ def parse_kudago_response_as_events_data(kudago_response: dict) -> t.Generator[E
             city = CITY_CODE_TO_NAME_MAP[kudago_event['location']['slug']]
             place = str(kudago_event.get('place') or city)
 
+            datetime_from = datetime.fromtimestamp(kudago_event['dates'][0]['start'])
+            datetime_to = None
+            if end_date := kudago_event['dates'][0].get('end'):
+                datetime_to = datetime.fromtimestamp(end_date)
+
             event_data = EventData(
                 id=uuid.uuid4(),
                 title=kudago_event['title'],
                 description=kudago_event['body_text'],
-                datetime_from=datetime.fromtimestamp(kudago_event['dates'][0]['start']),
-                datetime_to=datetime.fromtimestamp(kudago_event['dates'][0]['end']),  # is it nullable ?
+                datetime_from=datetime_from,
+                datetime_to=datetime_to,
                 city=city,
                 venue=models.Venue(title=place),
                 picture=models.Image(image_url=kudago_event['images'][0].get('image') or None),
                 price=event_price,
                 tags=kudago_event['tags'],
                 contact=kudago_event.get('site_url'),
+                service_id=get_service_id('kudago', kudago_event['id']),
                 service_type=models.EventSource.KUDAGO,
                 service_data=kudago_event,
             )

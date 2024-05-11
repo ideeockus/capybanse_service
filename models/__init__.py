@@ -55,6 +55,7 @@ class BasicEvent(BaseModel):
 
 
 class EventData(BasicEvent):
+    service_id: str  # unique key among different sources
     service_type: EventSource
     service_data: dict  # custom service data
 

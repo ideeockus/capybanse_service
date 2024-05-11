@@ -41,3 +41,7 @@ def get_logger(module_name: str) -> logging.Logger:
 
 def get_today_dt() -> float:
     return datetime.now().replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+
+
+def get_service_id(service_name: str, inner_id: str) -> str:
+    return f'{service_name}_{inner_id}'

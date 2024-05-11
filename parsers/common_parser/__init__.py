@@ -5,7 +5,6 @@ from abc import abstractmethod
 from datetime import datetime
 
 import aio_pika
-import ujson
 
 from models import EventData
 from parsers.config import RABBITMQ_HOST
@@ -52,15 +51,6 @@ class EventsParser(ABC):
         queue = await channel.declare_queue(mq_queue_name, durable=True)
         await queue.bind(exchange, mq_queue_name)
 
-        # channel.exchange_declare(exchange=MQ_EXCHANGE_NAME, exchange_type='topic')
-        # channel.queue_declare(mq_queue_name, durable=True)
-        #
-        # channel.queue_bind(
-        #     exchange=MQ_EXCHANGE_NAME,
-        #     queue=MQ_QUEUE_NAME,
-        #     routing_key=f'events.{self.parser_name()}',
-        # )
-
         while events := await self._get_next_events():
             for event_data in events:
                 event_data_json = event_data.json()
@@ -73,14 +63,6 @@ class EventsParser(ABC):
                     routing_key=mq_queue_name,
                 )
 
-                # a.basic_publish(
-                #     exchange=MQ_EXCHANGE_NAME,
-                #     routing_key=mq_queue_name,
-                #     properties=pika.BasicProperties(
-                #         delivery_mode=pika.DeliveryMode.Persistent,
-                #     ),
-                #     body=event_data_json.encode(),
-                # )
         await connection.close()
 
     async def run(self):

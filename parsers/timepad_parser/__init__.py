@@ -9,6 +9,7 @@ import models
 from models import EventData
 from parsers.common_parser import EventsParser
 from parsers.utils import get_logger
+from parsers.utils import get_service_id
 from parsers.utils import retry
 
 logger = get_logger('timepad_parser')
@@ -93,12 +94,17 @@ def parse_timepad_response_as_events_data(timepad_events: list[dict]) -> t.Gener
             html_parser = LexborHTMLParser(timepad_event['body'])
             description = html_parser.text()
 
+            datetime_from = datetime.fromisoformat(timepad_event['startDate'])
+            datetime_to = None
+            if end_date := timepad_event.get('endDate'):
+                datetime_to = datetime.fromisoformat(end_date)
+
             event_data = EventData(
                 id=uuid.uuid4(),
                 title=timepad_event['title'],
                 description=description,
-                datetime_from=datetime.fromisoformat(timepad_event['startDate']),
-                datetime_to=datetime.fromisoformat(timepad_event['endDate']),  # is it nullable ?
+                datetime_from=datetime_from,
+                datetime_to=datetime_to,
                 city=timepad_event['address']['city'],
                 venue=models.Venue(
                     title=timepad_event['organization']['name'],
@@ -109,6 +115,7 @@ def parse_timepad_response_as_events_data(timepad_events: list[dict]) -> t.Gener
                 picture=models.Image(image_url=timepad_event.get('photo') or None),
                 price=event_price,
                 contact=timepad_event.get('contact_phone'),
+                service_id=get_service_id('timepad', timepad_event['id']),
                 service_type=models.EventSource.TIMEPAD,
                 service_data=timepad_event,
             )
