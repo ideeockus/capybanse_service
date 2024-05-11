@@ -7,6 +7,7 @@ from selectolax.lexbor import LexborHTMLParser
 
 import models
 from models import EventData
+from parsers import storage
 from parsers.common_parser import EventsParser
 from parsers.utils import get_logger
 from parsers.utils import get_service_id
@@ -18,11 +19,14 @@ API_URL = 'https://ontp.timepad.ru/api'
 
 class TimepadParser(EventsParser):
     PAGE_SIZE = 24  # default, cannot be changed (?)
+    PAGE_STATE_KEY = 'timepad_page'
 
     def __init__(self, proxies: list[str]):
         super().__init__(proxies)
-        # todo save state
-        self.page = 1
+
+        persisted_state = storage.get_state(TimepadParser.PAGE_STATE_KEY) or 1
+        self.page: int = int(persisted_state)
+        logger.info('%s initialized with page %s', self.__class__.__name__, self.page)
 
     @staticmethod
     def parser_name():
@@ -57,15 +61,17 @@ class TimepadParser(EventsParser):
 
             logger.debug('got events response %s', response)
             if response.is_success:
-                # todo rework it
-                self.page += 1
                 response_json = response.json()
                 events = response_json['list']
                 events_json = [
                     await self._get_timepad_event(event['id']) for event in events
                 ]
 
-                return parse_timepad_response_as_events_data(events_json)
+                parsed_events = parse_timepad_response_as_events_data(events_json)
+
+                self.page += 1
+                storage.set_state(TimepadParser.PAGE_STATE_KEY, str(self.page))
+                return parsed_events
             else:
                 logger.warning(
                     'page %s parsing error: %s',

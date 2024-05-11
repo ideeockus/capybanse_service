@@ -6,6 +6,7 @@ from httpx import AsyncClient
 
 import models
 from models import EventData
+from parsers import storage
 from parsers.common_parser import EventsParser
 from parsers.utils import get_logger
 from parsers.utils import get_service_id
@@ -29,10 +30,14 @@ class KudagoParser(EventsParser):
         'body_text,location,categories,tagline,age_restriction,price,is_free,'
         'images,favorites_count,comments_count,site_url,tags,participants'
     )
+    PAGE_STATE_KEY = 'kudago_page'
 
     def __init__(self, proxies: list[str]):
         super().__init__(proxies)
-        self.page = 1
+
+        persisted_state = storage.get_state(KudagoParser.PAGE_STATE_KEY) or 1
+        self.page: int = int(persisted_state)
+        logger.info('%s initialized with page %s', self.__class__.__name__, self.page)
 
     @staticmethod
     def parser_name():
@@ -48,7 +53,7 @@ class KudagoParser(EventsParser):
                 'page_size': KudagoParser.PAGE_SIZE,
                 'fields': KudagoParser.FIELDS,
                 'text_format': 'plain',
-                'actual_since': get_today_dt()
+                'actual_since': get_today_dt(),
             })
 
             logger.debug('got events response %s', response)
@@ -56,8 +61,8 @@ class KudagoParser(EventsParser):
                 response_json = response.json()
                 parsed_events = parse_kudago_response_as_events_data(response_json)
 
-                # todo persist parser state
                 self.page += 1
+                storage.set_state(KudagoParser.PAGE_STATE_KEY, str(self.page))
                 return parsed_events
             else:
                 logger.warning(
@@ -66,6 +71,8 @@ class KudagoParser(EventsParser):
                     response.text
                 )
 
+        # reset state
+        storage.set_state(KudagoParser.PAGE_STATE_KEY, str(1))
         return None
 
 
