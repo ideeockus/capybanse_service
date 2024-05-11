@@ -1,7 +1,6 @@
 import typing as t
 import uuid
 from datetime import datetime
-from enum import Enum
 
 from httpx import AsyncClient
 
@@ -20,29 +19,6 @@ API_URL_BASE = 'https://kudago.com/public-api/'
 API_VERSION = 'v1.4'
 
 API_URL = API_URL_BASE + API_VERSION
-
-
-class TextFormat(Enum):
-    Html = 'html'
-    Plain = 'plain'
-    Text = 'text'
-
-
-class Location(Enum):
-    SPB = "spb"
-    MSK = "msk"
-    NSK = "nsk"
-    EKB = "ekb"
-    NNV = "nnv"
-    KZN = "kzn"
-    VBG = "vbg"
-    SMR = "smr"
-    KRD = "krd"
-    SOCHI = "sochi"
-    UFA = "ufa"
-    KRASNOYARSK = "krasnoyarsk"
-    KEV = "kev"
-    NEW_YORK = "new-york"
 
 
 class KudagoParser(EventsParser):
@@ -74,14 +50,18 @@ class KudagoParser(EventsParser):
                 'actual_since': get_today_dt()
             })
 
-            logger.debug('got response %s', response)
+            logger.debug('got events response %s', response)
             if response.is_success:
-                self.page += 1
                 response_json = response.json()
-                return parse_kudago_response_as_events_data(response_json)
+                parsed_events = parse_kudago_response_as_events_data(response_json)
+
+                # todo persist parser state
+                self.page += 1
+                return parsed_events
             else:
                 logger.warning(
-                    'kudago parser: page %s parsing error: %s',
+                    'page %s parsing error: %s',
+                    self.page,
                     response.text
                 )
 
@@ -136,6 +116,7 @@ def parse_kudago_response_as_events_data(kudago_response: dict) -> t.Generator[E
                 picture=models.Image(image_url=kudago_event['images'][0].get('image') or None),
                 price=event_price,
                 tags=kudago_event['tags'],
+                contact=kudago_event.get('site_url'),
                 service_type=models.EventSource.KUDAGO,
                 service_data=kudago_event,
             )
@@ -144,7 +125,7 @@ def parse_kudago_response_as_events_data(kudago_response: dict) -> t.Generator[E
         except Exception as err:
             logger.exception('Cannot parse event %s. Error %s', kudago_event, err)
             # should we suppress exception ?
-            # raise from err
+            raise Exception('Event parse failed') from err
 
 
 """

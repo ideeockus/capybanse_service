@@ -1,14 +1,12 @@
-import typing as t
 from datetime import datetime
-
-from pydantic.dataclasses import dataclass
-from pydantic import BaseModel, HttpUrl
-
 from enum import Enum
-from pydantic import BaseModel, Field
 from typing import Optional
-from datetime import datetime
 from uuid import UUID
+
+from pydantic import BaseModel
+from pydantic import Field
+from pydantic import HttpUrl
+from pydantic import field_validator
 
 
 class EventSource(Enum):
@@ -19,7 +17,8 @@ class EventSource(Enum):
 
 
 class Venue(BaseModel):
-    title: str
+    title: str | None = None
+    address: str | None = None
     lat: float | None = None
     lon: float | None = None
 
@@ -27,6 +26,13 @@ class Venue(BaseModel):
 class Image(BaseModel):
     image_url: HttpUrl | None = None
     local_image: str | None = None
+
+    @field_validator('image_url', mode='before')
+    def set_default_image_url(cls, value):
+        try:
+            return HttpUrl(url=value)
+        except ValueError:
+            return None
 
 
 class Price(BaseModel):
@@ -45,6 +51,7 @@ class BasicEvent(BaseModel):
     picture: Image
     price: Price | None = None
     tags: list[str] = Field(default_factory=list)
+    contact: str | None = None
 
 
 class EventData(BasicEvent):

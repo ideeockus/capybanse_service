@@ -24,6 +24,14 @@ class EventsParser(ABC):
     def parser_name() -> str:
         ...
 
+    @staticmethod
+    def get_httpx_client_params() -> dict:
+        params = {
+            # 'proxy': 'socks5://user:pass@host:port'
+        }
+
+        return params
+
     @abstractmethod
     async def _get_next_events(self) -> t.Iterable[EventData] | None:
         ...
