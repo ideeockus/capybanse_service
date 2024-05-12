@@ -5,7 +5,7 @@ from parsers.config import POSTGRES_HOST
 from parsers.config import POSTGRES_PASSWORD
 from parsers.config import POSTGRES_PORT
 from parsers.config import POSTGRES_USER
-from parsers.utils import get_logger
+from common.utils import get_logger
 
 logger = get_logger('storage')
 

@@ -5,11 +5,11 @@ from datetime import datetime
 from httpx import AsyncClient
 from selectolax.lexbor import LexborHTMLParser
 
-import models
-from models import EventData
+from common import models
+from common.models import EventData
 from parsers import storage
 from parsers.common_parser import EventsParser
-from parsers.utils import get_logger
+from common.utils import get_logger
 from parsers.utils import get_service_id
 from parsers.utils import retry
 
@@ -129,7 +129,6 @@ def parse_timepad_response_as_events_data(timepad_events: list[dict]) -> t.Gener
             yield event_data
         except Exception as err:
             logger.exception('Cannot parse event %s. Error %s', timepad_event, err)
-            # todo should we suppress exception ?
             raise Exception('Event parse failed') from err
 
 

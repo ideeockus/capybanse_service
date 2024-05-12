@@ -6,9 +6,11 @@ from datetime import datetime
 
 import aio_pika
 
-from models import EventData
+from common.models import EventData
 from parsers.config import RABBITMQ_HOST
-from parsers.utils import get_logger
+from common.utils import get_logger
+from parsers.config import RABBITMQ_PASSWORD
+from parsers.config import RABBITMQ_USER
 
 logger = get_logger('common_parser')
 PARSING_INTERVAL = 3600 * 3  # 3 hours
@@ -43,6 +45,8 @@ class EventsParser(ABC):
 
         connection = await aio_pika.connect(
             host=RABBITMQ_HOST,
+            login=RABBITMQ_USER,
+            password=RABBITMQ_PASSWORD,
         )
         channel = await connection.channel()
         await channel.set_qos(prefetch_count=150)

@@ -2,8 +2,7 @@ import asyncio
 
 from parsers.kudago_parser import KudagoParser
 from parsers.timepad_parser import TimepadParser
-from parsers.utils import get_logger
-
+from common.utils import get_logger
 
 logger = get_logger('main')
 

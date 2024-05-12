@@ -12,6 +12,6 @@ authors = [
 readme = "README.md"
 license = { file = "LICENSE" }
 dependencies = [
-    'psycopg~=3.1',
-    'psycopg-binary~=3.1',
+    'psycopg[binary, pool]~=3.1',
+#    'psycopg-binary~=3.1',
 ]

@@ -4,11 +4,11 @@ from datetime import datetime
 
 from httpx import AsyncClient
 
-import models
-from models import EventData
+from common import models
+from common.models import EventData
 from parsers import storage
 from parsers.common_parser import EventsParser
-from parsers.utils import get_logger
+from common.utils import get_logger
 from parsers.utils import get_service_id
 from parsers.utils import get_today_dt
 from parsers.utils import retry
