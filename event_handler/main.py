@@ -2,12 +2,11 @@
 Consume events from queues, vectorize and save to databases
 """
 import asyncio
-import time
 
 import aio_pika
 
-from common.clients import PostgresDB
-from common.clients import VectorDB
+from common.clients.posgres_client import PostgresDB
+from common.clients.vectordb_client import VectorDB
 from common.models import EventData
 from common.utils import get_logger
 from event_handler.config import POSTGRES_DB

@@ -39,8 +39,6 @@ class EventsParser(ABC):
 
     async def run_parsing(self):
         MQ_EXCHANGE_NAME = 'events_parsing'
-        # MQ_QUEUE_NAME = 'events_parsing_queue'
-
         mq_queue_name = f'events.{self.parser_name()}'
 
         connection = await aio_pika.connect(
@@ -49,7 +47,6 @@ class EventsParser(ABC):
             password=RABBITMQ_PASSWORD,
         )
         channel = await connection.channel()
-        await channel.set_qos(prefetch_count=150)
 
         exchange = await channel.declare_exchange(MQ_EXCHANGE_NAME, type=aio_pika.ExchangeType.DIRECT)
         queue = await channel.declare_queue(mq_queue_name, durable=True)

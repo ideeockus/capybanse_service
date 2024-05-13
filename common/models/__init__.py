@@ -1,4 +1,4 @@
-import random
+import typing as t
 from datetime import datetime
 from enum import Enum
 from typing import Optional
@@ -67,6 +67,7 @@ class ResonanceEventInfo(BaseModel):
     contact_info: Optional[str] = Field(None, max_length=255)
     creation_time: datetime = Field(default_factory=datetime.now)
 
+
 # other
 #
 # class KudaGoEvent(BaseModel):
@@ -92,3 +93,30 @@ class ResonanceEventInfo(BaseModel):
 #     tags: list[str]
 #     disable_comments: bool
 #     participants: list[Participant]
+
+class InteractionKind(Enum, str):
+    CLICK = 'click'
+    LIKE = 'like'
+    DISLIKE = 'dislike'
+
+
+class UserInteraction(BaseModel):
+    user_id: int
+    event_id: UUID
+    interaction_type: InteractionKind
+    interaction_dt: datetime
+
+
+class RecSubsystem(Enum, str):
+    BASIC = 'BASIC'
+    DYNAMIC = 'DYNAMIC'
+    COLLABORATIVE = 'COLLABORATIVE'
+
+
+class RecItem(t.NamedTuple):
+    subsystem: RecSubsystem
+    event: EventData
+    score: float
+
+
+RecommendationList = list[RecItem]
