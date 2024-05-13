@@ -4,8 +4,8 @@ import typing as t
 import psycopg
 from psycopg_pool import AsyncConnectionPool
 
-from common.clients import CREATE_RESONANSE_EVENTS_TABLE
-from common.clients import CREATE_RESONANSE_USERS_TABLE
+from common.clients.prepared_sql import CREATE_RESONANSE_EVENTS_TABLE
+from common.clients.prepared_sql import CREATE_RESONANSE_USERS_TABLE
 from common.models import EventData
 from common.models import EventSource
 from common.models import Image

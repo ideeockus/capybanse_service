@@ -12,8 +12,8 @@ from common.models import EventData
 from common.utils import get_logger
 
 # todo fix this path
-# CACHE_DIR = 'model'
-CACHE_DIR = '/var/capybanse/model'
+CACHE_DIR = 'model'
+# CACHE_DIR = '/var/capybanse/model'
 QDRANT_EVENTS_COLLECTION = 'events_collection'
 QDRANT_USERS_COLLECTION = 'users_collection'
 RECOMMENDATION_PERIOD = timedelta(days=180)
@@ -42,11 +42,22 @@ class VectorDB:
             port=qdrant_port,
         )
 
+        # initialize collections if not exists
         is_events_collections_exists = await qdrant_client.collection_exists(QDRANT_EVENTS_COLLECTION)
         if not is_events_collections_exists:
             logger.info('no collection %s, creating', QDRANT_EVENTS_COLLECTION)
             await qdrant_client.create_collection(
                 collection_name=QDRANT_EVENTS_COLLECTION,
+                vectors_config=models.VectorParams(
+                    size=384, distance=models.Distance.COSINE, on_disk=True
+                ),
+            )
+
+        is_users_collections_exists = await qdrant_client.collection_exists(QDRANT_USERS_COLLECTION)
+        if not is_users_collections_exists:
+            logger.info('no collection %s, creating', QDRANT_USERS_COLLECTION)
+            await qdrant_client.create_collection(
+                collection_name=QDRANT_USERS_COLLECTION,
                 vectors_config=models.VectorParams(
                     size=384, distance=models.Distance.COSINE, on_disk=True
                 ),

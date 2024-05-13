@@ -1,7 +1,5 @@
 import logging
 
-from common.utils.types import Embedding
-
 
 def get_logger(module_name: str) -> logging.Logger:
     logger = logging.getLogger(module_name)
