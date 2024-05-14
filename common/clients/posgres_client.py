@@ -99,6 +99,29 @@ class PostgresDB:
 
         return True
 
+    async def set_user_description(self, user_id: int, user_description: str) -> bool:
+        query = '''
+            UPDATE resonanse_users
+            SET description = %(description)s
+            WHERE id = %(id)s;
+        '''
+
+        try:
+            async with self._pool.connection() as aconn:
+                async with aconn.cursor() as acur:
+                    await acur.execute(
+                        query,
+                        {
+                            'id': user_id,
+                            'description': user_description,
+                        }
+                    )
+        except psycopg.errors.Error as err:
+            logger.exception('Error on add_event %s', err)
+            return False
+
+        return True
+
     async def fetch_events(self) -> list[EventData]:
         # todo possibly not working (not checked)
         query = '''
