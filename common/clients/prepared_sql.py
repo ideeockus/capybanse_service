@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS resonanse_events (
 
      datetime_from TIMESTAMP NOT NULL,
      datetime_to TIMESTAMP,
-     city TEXT NOT NULL,
+     city TEXT,
 
      venue_title TEXT,
      venue_address TEXT,

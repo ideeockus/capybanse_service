@@ -47,7 +47,7 @@ class BasicEvent(BaseModel):
     datetime_from: datetime
     description: str | None = None
     datetime_to: Optional[datetime] = None
-    city: str
+    city: str | None
     venue: Venue
     picture: Image
     price: Price | None = None

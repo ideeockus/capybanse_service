@@ -176,7 +176,7 @@ class PostgresDB:
 
         async with self._pool.connection() as aconn:
             async with aconn.cursor() as acur:
-                user_description = acur.execute(
+                user_description = await acur.execute(
                     query,
                     {'id': user_id},
                 ).fetchone()

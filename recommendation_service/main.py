@@ -1,5 +1,6 @@
 import asyncio
 import json
+import typing as t
 
 import aio_pika
 
@@ -23,8 +24,19 @@ logger = get_logger('main')
 RPC_QUEUE_RECOMMENDATION_BY_USER = 'recommendations.requests.by_user'
 RPC_QUEUE_SET_USER_DESCRIPTION = 'resonanse_api.requests.set_user_description'
 
+QueueHandler = t.Callable[
+    [
+        aio_pika.abc.AbstractIncomingMessage,
+        aio_pika.exchange.AbstractExchange,
+    ],
+    t.Awaitable[None]
+]
 
-async def rpc_get_recommendation_by_user(message: aio_pika.abc.AbstractIncomingMessage) -> None:
+
+async def rpc_get_recommendation_by_user(
+        message: aio_pika.abc.AbstractIncomingMessage,
+        exchange: aio_pika.exchange.AbstractExchange,
+) -> None:
     async with message.process(requeue=False):
         if message.reply_to is None:
             logger.warning('message.reply_to is', message.reply_to)
@@ -36,9 +48,7 @@ async def rpc_get_recommendation_by_user(message: aio_pika.abc.AbstractIncomingM
         response = await get_recommendation_for_user(user_id)
         resp_json = json.dumps(response)
 
-        channel = message.channel
-        exchange = channel.default_exchange
-
+        logger.debug('Send response: rpc_get_recommendation_by_user')
         await exchange.publish(
             aio_pika.Message(
                 body=resp_json.encode(),
@@ -48,7 +58,10 @@ async def rpc_get_recommendation_by_user(message: aio_pika.abc.AbstractIncomingM
         )
 
 
-async def rpc_set_user_description(message: aio_pika.abc.AbstractIncomingMessage) -> None:
+async def rpc_set_user_description(
+        message: aio_pika.abc.AbstractIncomingMessage,
+        exchange: aio_pika.exchange.AbstractExchange,
+) -> None:
     async with message.process(requeue=False):
         if message.reply_to is None:
             logger.warning('message.reply_to is', message.reply_to)
@@ -83,9 +96,7 @@ async def rpc_set_user_description(message: aio_pika.abc.AbstractIncomingMessage
 
         resp_json = json.dumps({'status': status})
 
-        channel = message.channel
-        exchange = channel.default_exchange
-
+        logger.debug('Send response: rpc_set_user_description')
         await exchange.publish(
             aio_pika.Message(
                 body=resp_json.encode(),
@@ -93,6 +104,23 @@ async def rpc_set_user_description(message: aio_pika.abc.AbstractIncomingMessage
             ),
             routing_key=message.reply_to,
         )
+
+
+async def run_queue_handler(
+        queue: aio_pika.queue.AbstractQueue,
+        resp_exchange: aio_pika.exchange.AbstractExchange,
+        handler: QueueHandler,
+):
+    async with queue.iterator() as qiterator:
+        message: aio_pika.message.AbstractIncomingMessage
+    async for message in qiterator:
+        try:
+            await handler(
+                message,
+                resp_exchange,
+            )
+        except Exception as err:
+            logger.exception("Processing error %s for message %r", err, message)
 
 
 RPC_QUEUE_HANDLERS = {
@@ -109,13 +137,25 @@ async def main() -> None:
     )
 
     channel = await connection.channel()
+    exchange = channel.default_exchange
     logger.info('Starting recommendation service RPC')
 
     # it seems that big prefetch count depletes db connection pool
     await channel.set_qos(prefetch_count=10)
+
+    queue_handling_tasks = []
     for (mq_queue_name, handler) in RPC_QUEUE_HANDLERS.items():
         queue = await channel.declare_queue(mq_queue_name, durable=True)
-        await queue.consume(handler)
+        queue_handling_tasks.append(
+            asyncio.create_task(run_queue_handler(
+                queue,
+                exchange,
+                handler,
+            ))
+        )
+
+    while queue_handling_tasks:
+        await asyncio.wait(queue_handling_tasks)
 
 
 if __name__ == "__main__":
