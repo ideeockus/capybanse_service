@@ -95,7 +95,7 @@ services:
       - capybanse-container-network
 
   capybanse_tg_bot:
-    image: "ideeockus/capybanse/tg_bot:latest"
+    image: "ideeockus/capybanse/resonanse_bot:latest"
     container_name: tg_bot
     restart: always
     depends_on:

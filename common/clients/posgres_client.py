@@ -176,10 +176,11 @@ class PostgresDB:
 
         async with self._pool.connection() as aconn:
             async with aconn.cursor() as acur:
-                user_description = await acur.execute(
+                description = await acur.execute(
                     query,
                     {'id': user_id},
-                ).fetchone()
+                )
+                user_description = await description.fetchone()
                 if user_description:
                     return user_description[0]
 

@@ -19,7 +19,7 @@ class ClickHouseDB:
     @classmethod
     async def get_client(cls, host, username, password) -> t.Self:
         if cls._clickhouse_client is not None:
-            return cls._clickhouse_client
+            return cls()
 
         client = clickhouse_connect.get_client(host=host, username=username, password=password)
         client.command(CREATE_USERS_INTERACTION_TABLE)

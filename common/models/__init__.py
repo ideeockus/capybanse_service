@@ -95,4 +95,10 @@ class RecItem(BaseModel):
     score: float
 
 
+class SimplifiedRecItem(BaseModel):
+    subsystem: RecSubsystem
+    event_id: UUID
+    score: float
+
+
 RecommendationList = list[RecItem]

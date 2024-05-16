@@ -1,3 +1,4 @@
+import re
 import typing as t
 import uuid
 from datetime import datetime
@@ -95,6 +96,12 @@ CITY_CODE_TO_NAME_MAP = {
 }
 
 
+def extract_minimum_price(text: str) -> int | None:
+    numbers = re.findall(r'\d+', text)
+    numbers = list(map(int, numbers))
+    return min(numbers) if numbers else None
+
+
 def parse_kudago_response_as_events_data(kudago_response: dict) -> t.Generator[EventData, None, None]:
     results = kudago_response['results']
     logger.debug('Parsed %s events', len(results))
@@ -107,11 +114,13 @@ def parse_kudago_response_as_events_data(kudago_response: dict) -> t.Generator[E
                     price=float(price),
                     currency='₽',
                 )
+            elif price:
+                event_price = extract_minimum_price(price)
             else:
                 event_price = None
 
             city = CITY_CODE_TO_NAME_MAP[kudago_event['location']['slug']]
-            place = str(kudago_event.get('place') or city)
+            place = city
 
             datetime_from = datetime.fromtimestamp(kudago_event['dates'][0]['start'])
             datetime_to = None

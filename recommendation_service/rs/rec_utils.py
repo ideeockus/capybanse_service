@@ -56,6 +56,7 @@ async def get_dynamic_dssm_candidates(
     considered_interactions = 100
     explicit_coefficient = 5  # value multiplier for explicit feedback
 
+    # todo: 'HttpClient' object has no attribute 'get_interactions_by_user' ???
     interactions = await clickhouse_client.get_interactions_by_user(
         user_id,
         last_week,
@@ -195,7 +196,7 @@ def get_top_k(candidates: RecommendationList, limit: int) -> RecommendationList:
     )[:limit]
 
 
-async def get_recommendation_for_user_query(user_id: int, user_query: str) -> RecommendationList:
+async def get_recommendation_for_user_query(user_id: int, user_query: str | None) -> RecommendationList:
     vectordb_client = await VectorDB.get_client(QDRANT_HOST, QDRANT_PORT)
     clickhouse_client = await ClickHouseDB.get_client(
         CLICKHOUSE_HOST,
@@ -205,10 +206,13 @@ async def get_recommendation_for_user_query(user_id: int, user_query: str) -> Re
 
     # 1. get candidates
 
-    basic_candidates = await get_static_dssm_candidates(
-        vectordb_client,
-        user_query,
-    )
+    basic_candidates = []
+    if user_query is not None:
+        basic_candidates = await get_static_dssm_candidates(
+            vectordb_client,
+            user_query,
+        )
+
     dynamic_candidates = await get_dynamic_dssm_candidates(
         vectordb_client,
         clickhouse_client,

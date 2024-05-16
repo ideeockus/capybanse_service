@@ -7,10 +7,9 @@ name = "events_handler"
 version = "2024.0.1"
 description = "events handler"
 authors = [
-    "Radmir <radmirka745@gmail.com>",
+    { name="Radmir", email="radmirka745@gmail.com"},
 ]
-readme = "README.md"
-license = { file = "LICENSE" }
+license = { "text" = "AGPL-3.0" }
 dependencies = [
     'aio-pika ~= 9.4',
 ]

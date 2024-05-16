@@ -6,7 +6,9 @@ import aio_pika
 
 from common.clients import PostgresDB
 from common.clients import VectorDB
+from common.models import SimplifiedRecItem
 from common.utils import get_logger
+from common.utils.serde_helpers import custom_encoder
 from event_handler.config import RABBITMQ_HOST
 from event_handler.config import RABBITMQ_PASSWORD
 from event_handler.config import RABBITMQ_USER
@@ -45,8 +47,18 @@ async def rpc_get_recommendation_by_user(
         req_json = json.loads(message.body)
         user_id = req_json['user_id']
 
-        response = await get_recommendation_for_user(user_id)
-        resp_json = json.dumps(response)
+        recommendations = await get_recommendation_for_user(user_id)
+        response = [
+            SimplifiedRecItem(
+                subsystem=rec.subsystem,
+                event_id=rec.event.id,
+                score=rec.score,
+            ) for rec in recommendations
+        ]
+        resp_json = json.dumps(
+            [rec.model_dump() for rec in response],
+            default=custom_encoder,
+        )
 
         logger.debug('Send response: rpc_get_recommendation_by_user')
         await exchange.publish(
