@@ -99,7 +99,7 @@ async def get_dynamic_dssm_candidates(
 
     return [
         RecItem(
-            subsystem=RecSubsystem.BASIC,
+            subsystem=RecSubsystem.DYNAMIC,
             score=item[0],
             event=item[1],
         ) for item in result
@@ -146,7 +146,7 @@ async def get_collaborative_dssm_candidates(
     result = await vectordb_client.search_event_by_vector(collaborative_embedding, 10)
     return [
         RecItem(
-            subsystem=RecSubsystem.BASIC,
+            subsystem=RecSubsystem.COLLABORATIVE,
             score=item[0],
             event=item[1],
         ) for item in result

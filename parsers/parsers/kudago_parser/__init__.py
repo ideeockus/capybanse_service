@@ -93,6 +93,7 @@ CITY_CODE_TO_NAME_MAP = {
     'krasnoyarsk': 'Красноярск',
     'kev': 'Киев',
     'new-york': 'Нью-Йорк',
+    'london': 'Лондон',
 }
 
 
@@ -115,11 +116,16 @@ def parse_kudago_response_as_events_data(kudago_response: dict) -> t.Generator[E
                     currency='₽',
                 )
             elif price:
-                event_price = extract_minimum_price(price)
+                if extracted_price := extract_minimum_price(price):
+                    event_price = models.Price(
+                        price=extracted_price,
+                        currency='₽',
+                    )
             else:
                 event_price = None
 
-            city = CITY_CODE_TO_NAME_MAP[kudago_event['location']['slug']]
+            city_slug = kudago_event['location']['slug']
+            city = CITY_CODE_TO_NAME_MAP.get(city_slug) or city_slug
             place = city
 
             datetime_from = datetime.fromtimestamp(kudago_event['dates'][0]['start'])

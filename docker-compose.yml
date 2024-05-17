@@ -6,13 +6,9 @@ services:
     container_name: capybanse_postgres
     volumes:
       - ./capybanse_storage/postgres_data:/var/lib/postgresql/data
-#    expose:
-#      - 5432:5432
+    ports:
+      - 5432:5432
     restart: always
-#    deploy:
-#      resources:
-#        limits:
-#          memory: 2G
     networks:
       - capybanse-container-network
     env_file: capybanse.env
@@ -21,10 +17,15 @@ services:
     image: "rabbitmq:management"
     container_name: capybanse_rabbitmq
     hostname: capybanse_rabbitmq
-#    expose:
-#      - "5672:5672"
-#    ports:
-#      - "15672:15672"
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
     volumes:
       - ./capybanse_storage/rabbitmq_data:/var/lib/rabbitmq
     restart: always
@@ -34,8 +35,8 @@ services:
   qdrant:
     image: "qdrant/qdrant"
     container_name: capybanse_qdrant
-#    ports:
-#      - "6333:6333"
+    ports:
+      - "6333:6333"
     volumes:
       - ./capybanse_storage/qdrant_storage:/qdrant/storage
       - ./capybanse_storage/qdrant_snapshots:/qdrant/snapshots
@@ -48,6 +49,9 @@ services:
     image: "clickhouse/clickhouse-server"
     container_name: capybanse_clickhouse
     hostname: capybanse_clickhouse
+    ports:
+      - 8123:8123
+      - 8443:8443
     ulimits:
       nproc: 30000
       nofile:
@@ -60,45 +64,38 @@ services:
       - capybanse-container-network
 
 
-  capybanse_event_parser:
-#    image: "ideeockus/capybanse_event_parser:latest"
-    image: "capybanse_event_parser:latest"
-#    build:
-#      context: ./parsers
-#      dockerfile: Dockerfile
-
-    container_name: event_parser
-    restart: always
-    depends_on:
-      - postgres
-      - rabbitmq
-    networks:
-      - capybanse-container-network
-    env_file: capybanse.env
-
-  capybanse_event_handler:
-#    image: "ideeockus/capybanse_event_handler:latest"
-    build:
-      context: ./event_handler
-      dockerfile: Dockerfile
-
-    container_name: event_handler
-    volumes:
-      - ./capybanse_storage/model_data:/var/capybanse/model
-    restart: always
-    depends_on:
-      - postgres
-      - rabbitmq
-      - qdrant
-    networks:
-      - capybanse-container-network
-    env_file: capybanse.env
-
+#  capybanse_event_parser:
+##    image: "ideeockus/capybanse_event_parser:latest"
+#    image: "capybanse_event_parser:latest"
+#
+#    container_name: event_parser
+#    restart: always
+#    depends_on:
+#      - postgres
+#      - rabbitmq
+#    networks:
+#      - capybanse-container-network
+#    env_file: capybanse.env
+##
+#  capybanse_event_handler:
+##    image: "ideeockus/capybanse_event_handler:latest"
+#    image: "capybanse_event_handler:latest"
+#
+#    container_name: event_handler
+#    volumes:
+#      - ./capybanse_storage/model_data:/var/capybanse/model
+#    restart: always
+#    depends_on:
+#      - postgres
+#      - rabbitmq
+#      - qdrant
+#    networks:
+#      - capybanse-container-network
+#    env_file: capybanse.env
+#
   capybanse_rec_service:
 #    image: "ideeockus/capybanse_rec_service:latest"
-    build:
-      context: ./recommendation_service
-      dockerfile: Dockerfile
+    image: "capybanse_rec_service:latest"
 
     container_name: rec_service
     restart: always
@@ -109,17 +106,17 @@ services:
     networks:
       - capybanse-container-network
     env_file: capybanse.env
-
-  capybanse_tg_bot:
-    image: "ideeockus/capybanse_resonanse_bot:latest"
-    container_name: tg_bot
-    restart: always
-    depends_on:
-      - postgres
-      - rabbitmq
-    networks:
-      - capybanse-container-network
-    env_file: capybanse.env
+#
+#  capybanse_tg_bot:
+#    image: "ideeockus/capybanse_resonanse_bot:latest"
+#    container_name: tg_bot
+#    restart: always
+#    depends_on:
+#      - postgres
+#      - rabbitmq
+#    networks:
+#      - capybanse-container-network
+#    env_file: capybanse.env
 
 networks:
   capybanse-container-network:

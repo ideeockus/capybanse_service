@@ -4,21 +4,21 @@ Consume events from queues, vectorize and save to databases
 import asyncio
 
 import aio_pika
+
 from common.clients.posgres_client import PostgresDB
 from common.clients.vectordb_client import VectorDB
 from common.models import EventData
 from common.utils import get_logger
-
+from config import POSTGRES_DB
+from config import POSTGRES_HOST
+from config import POSTGRES_PASSWORD
+from config import POSTGRES_PORT
 from config import POSTGRES_USER
 from config import QDRANT_HOST
 from config import QDRANT_PORT
 from config import RABBITMQ_HOST
 from config import RABBITMQ_PASSWORD
 from config import RABBITMQ_USER
-from config import POSTGRES_DB
-from config import POSTGRES_HOST
-from config import POSTGRES_PASSWORD
-from config import POSTGRES_PORT
 
 logger = get_logger('main')
 
@@ -40,6 +40,7 @@ async def handle_event_message(message: aio_pika.abc.AbstractIncomingMessage) ->
     )
 
     event = EventData.model_validate_json(message.body)
+    event.description = event.description.strip()
 
     saved_to_pg = await postgres_client.add_event(event)
     if saved_to_pg:
@@ -55,6 +56,12 @@ async def handle_event_message(message: aio_pika.abc.AbstractIncomingMessage) ->
 
 
 async def main() -> None:
+    # init qdrant before message handling: issues with concurrent collection extistance check
+    await VectorDB.get_client(
+        qdrant_host=QDRANT_HOST,
+        qdrant_port=int(QDRANT_PORT),
+    )
+
     connection = await aio_pika.connect_robust(
         host=RABBITMQ_HOST,
         login=RABBITMQ_USER,

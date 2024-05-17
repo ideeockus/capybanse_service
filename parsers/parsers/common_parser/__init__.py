@@ -1,4 +1,5 @@
 import asyncio
+import time
 import typing as t
 from abc import ABC
 from abc import abstractmethod
@@ -43,9 +44,10 @@ class EventsParser(ABC):
 
         connection = await aio_pika.connect(
             host=RABBITMQ_HOST,
-            login=RABBITMQ_USER,
-            password=RABBITMQ_PASSWORD,
+            # login=RABBITMQ_USER,
+            # password=RABBITMQ_PASSWORD,
         )
+
         channel = await connection.channel()
 
         exchange = await channel.declare_exchange(MQ_EXCHANGE_NAME, type=aio_pika.ExchangeType.DIRECT)
@@ -72,6 +74,9 @@ class EventsParser(ABC):
 
             try:
                 await self.run_parsing()
+            except (ConnectionRefusedError, aio_pika.AMQPException) as err:
+                logger.exception('Connection error', err)
+                time.sleep(10)
             except Exception as e:
                 logger.exception('Exception on parsing: %s', e)
 
