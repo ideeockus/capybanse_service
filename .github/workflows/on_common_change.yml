@@ -3,7 +3,7 @@ name: Build and Push Docker images
 on:
   push:
     branches:
-      - main
+      - master
     paths:
       - 'capybanse_common/**'
       - 'event_handler/**'
