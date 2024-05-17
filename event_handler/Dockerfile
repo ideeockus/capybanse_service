@@ -1,7 +1,5 @@
-FROM python:3.12-slim-bookworm
+FROM capybanse_common
 WORKDIR /app
 
-COPY . .
-RUN pip install .
-
+COPY . /app
 CMD ["python", "main.py"]

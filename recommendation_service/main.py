@@ -9,17 +9,17 @@ from common.clients import VectorDB
 from common.models import SimplifiedRecItem
 from common.utils import get_logger
 from common.utils.serde_helpers import custom_encoder
-from event_handler.config import RABBITMQ_HOST
-from event_handler.config import RABBITMQ_PASSWORD
-from event_handler.config import RABBITMQ_USER
-from recommendation_service.config import POSTGRES_DB
-from recommendation_service.config import POSTGRES_HOST
-from recommendation_service.config import POSTGRES_PASSWORD
-from recommendation_service.config import POSTGRES_PORT
-from recommendation_service.config import POSTGRES_USER
-from recommendation_service.config import QDRANT_HOST
-from recommendation_service.config import QDRANT_PORT
-from recommendation_service.rs import get_recommendation_for_user
+from recsys_service.config import RABBITMQ_HOST
+from recsys_service.config import RABBITMQ_PASSWORD
+from recsys_service.config import RABBITMQ_USER
+from recsys_service.config import POSTGRES_DB
+from recsys_service.config import POSTGRES_HOST
+from recsys_service.config import POSTGRES_PASSWORD
+from recsys_service.config import POSTGRES_PORT
+from recsys_service.config import POSTGRES_USER
+from recsys_service.config import QDRANT_HOST
+from recsys_service.config import QDRANT_PORT
+from recsys_service import get_recommendation_for_user
 
 logger = get_logger('main')
 

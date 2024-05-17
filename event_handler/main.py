@@ -4,21 +4,21 @@ Consume events from queues, vectorize and save to databases
 import asyncio
 
 import aio_pika
-
 from common.clients.posgres_client import PostgresDB
 from common.clients.vectordb_client import VectorDB
 from common.models import EventData
 from common.utils import get_logger
-from event_handler.config import POSTGRES_DB
-from event_handler.config import POSTGRES_HOST
-from event_handler.config import POSTGRES_PASSWORD
-from event_handler.config import POSTGRES_PORT
-from event_handler.config import POSTGRES_USER
-from event_handler.config import QDRANT_HOST
-from event_handler.config import QDRANT_PORT
-from event_handler.config import RABBITMQ_HOST
-from event_handler.config import RABBITMQ_PASSWORD
-from event_handler.config import RABBITMQ_USER
+
+from config import POSTGRES_USER
+from config import QDRANT_HOST
+from config import QDRANT_PORT
+from config import RABBITMQ_HOST
+from config import RABBITMQ_PASSWORD
+from config import RABBITMQ_USER
+from config import POSTGRES_DB
+from config import POSTGRES_HOST
+from config import POSTGRES_PASSWORD
+from config import POSTGRES_PORT
 
 logger = get_logger('main')
 

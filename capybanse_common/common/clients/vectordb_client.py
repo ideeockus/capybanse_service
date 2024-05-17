@@ -1,3 +1,4 @@
+import os
 import typing as t
 from datetime import datetime
 from datetime import timedelta
@@ -12,8 +13,7 @@ from common.models import EventData
 from common.utils import get_logger
 
 # todo fix this path
-CACHE_DIR = 'model'
-# CACHE_DIR = '/var/capybanse/model'
+CACHE_DIR = os.getenv('FASTEMBED_CACHE_DIR') or '/var/capybanse/model'
 QDRANT_EVENTS_COLLECTION = 'events_collection'
 QDRANT_USERS_COLLECTION = 'users_collection'
 RECOMMENDATION_PERIOD = timedelta(days=180)

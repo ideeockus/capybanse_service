@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "common"
+version = "2024.0.1"
+description = "common models and utilities"
+authors = ["Radmir <radmirka745@gmail.com>"]
+license = "AGPL-3.0"
+
+[tool.poetry.dependencies]
+python = ">=3.12"
+aio-pika = "^9.4.1"
+aiormq = "^6.8.0"
+clickhouse-connect = "^0.7.8"
+fastembed = "^0.2.6"
+httpx = "^0.27.0"
+numpy = "^1.26.4"
+psycopg = { version = "^3.1.18", extras = ["binary", "pool"] }
+pydantic = "^2.7.1"
+qdrant-client = "^1.9.1"
+requests = "^2.31.0"
+selectolax = "^0.3.21"
+setuptools = "^69.5.1"
+
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

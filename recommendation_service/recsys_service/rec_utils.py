@@ -15,17 +15,16 @@ from common.models import InteractionKind
 from common.models import RecItem
 from common.models import RecSubsystem
 from common.models import RecommendationList
-from common.models import UserInteraction
-from recommendation_service.config import CLICKHOUSE_HOST
-from recommendation_service.config import CLICKHOUSE_PASSWORD
-from recommendation_service.config import CLICKHOUSE_USERNAME
-from recommendation_service.config import POSTGRES_DB
-from recommendation_service.config import POSTGRES_HOST
-from recommendation_service.config import POSTGRES_PASSWORD
-from recommendation_service.config import POSTGRES_PORT
-from recommendation_service.config import POSTGRES_USER
-from recommendation_service.config import QDRANT_HOST
-from recommendation_service.config import QDRANT_PORT
+from recsys_service.config import CLICKHOUSE_HOST
+from recsys_service.config import CLICKHOUSE_PASSWORD
+from recsys_service.config import CLICKHOUSE_USERNAME
+from recsys_service.config import POSTGRES_DB
+from recsys_service.config import POSTGRES_HOST
+from recsys_service.config import POSTGRES_PASSWORD
+from recsys_service.config import POSTGRES_PORT
+from recsys_service.config import POSTGRES_USER
+from recsys_service.config import QDRANT_HOST
+from recsys_service.config import QDRANT_PORT
 
 
 async def get_static_dssm_candidates(
