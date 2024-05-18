@@ -35,6 +35,14 @@ jobs:
           push: false
           load: true
           tags: ideeockus/capybanse_common:local
+          outputs: type=docker,dest=/tmp/capybanse_common.tar
+
+      - name: Upload capybanse_common artifaact
+        uses: actions/upload-artifact@v4
+        with:
+          name: capybanse_common
+          path: /tmp/capybanse_common.tar
+
   build_services:
     needs: build_common
     runs-on: ubuntu-latest
@@ -49,6 +57,17 @@ jobs:
             image: ideeockus/capybanse_rec_service
 
     steps:
+      - name: Download capybanse_common artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: capybanse_common
+          path: /tmp
+
+      - name: Load image capybanse_common
+        run: |
+          docker load --input /tmp/capybanse_common.tar
+          docker image ls -a
+
       - name: Checkout repository
         uses: actions/checkout@v3
 
