@@ -1,4 +1,4 @@
-FROM capybanse_common:latest
+FROM ideeockus/capybanse_common:latest
 WORKDIR /app
 
 COPY . /app
