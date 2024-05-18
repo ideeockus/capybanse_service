@@ -39,6 +39,16 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
+      # Сборка capybanse_common
+      - name: Build capybanse_common
+        uses: docker/build-push-action@v4
+        with:
+#          context: ./capybanse_common
+          file: ./capybanse_common/Dockerfile
+          push: false
+          load: true
+          tags: capybanse_common
+
       - name: Build and push
         uses: docker/build-push-action@v4
         with:

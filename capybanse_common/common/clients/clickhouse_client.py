@@ -54,7 +54,7 @@ class ClickHouseDB:
     async def get_interactions_by_user(self, user_id: int, after_dt: datetime, limit: int) -> list[UserInteraction]:
         result = self._clickhouse_client.query(
             '''
-            SELECT * FROM users_interactions WHERE (user_id = %(v1)s) AND (interaction_dt >= %(v2)s)
+            SELECT * FROM users_interactions WHERE (user_id = %(v1)s) AND (toDate(interaction_dt) >= toDate(%(v2)s))
             ORDER BY interaction_dt DESC
             LIMIT %(v3)s
             ''',
@@ -76,9 +76,9 @@ class ClickHouseDB:
     async def get_interactions_by_event(self, event_id: UUID, after_dt: datetime, limit: int) -> list[UserInteraction]:
         result = self._clickhouse_client.query(
             '''
-            SELECT * FROM users_interactions WHERE (event_id = %(v1)s) AND (interaction_dt >= %(v2)s)
+            SELECT * FROM users_interactions WHERE (event_id = %(v1)s) AND (toDate(interaction_dt) >= toDate(%(v2)s))
             ORDER BY interaction_dt DESC
-            LIMIT %(v3)s);
+            LIMIT %(v3)s
             ''',
             parameters={
                 'v1': event_id.hex,

@@ -55,7 +55,6 @@ async def get_dynamic_dssm_candidates(
     considered_interactions = 100
     explicit_coefficient = 5  # value multiplier for explicit feedback
 
-    # todo: 'HttpClient' object has no attribute 'get_interactions_by_user' ???
     interactions = await clickhouse_client.get_interactions_by_user(
         user_id,
         last_week,
@@ -63,37 +62,25 @@ async def get_dynamic_dssm_candidates(
     )
 
     interacted_events_ids = {interaction.event_id for interaction in interactions}
-    interacted_events_embeddings = await vectordb_client.get_events_vectors_by_ids(interacted_events_ids)
-    interacted_events_embeddings_by_id: dict[UUID, np.ndarray] = {
-        event_id: embedding
-        for event_id, embedding in zip(interacted_events_ids, interacted_events_embeddings)
-    }
 
-    positive_vectors = []
-    negative_vectors = []
+    positive_interacted_events_ids = []
+    negative_interacted_events_ids = []
 
     for interaction in interactions:
-        event_embedding = interacted_events_embeddings_by_id[interaction.event_id]
         if interaction.interaction_type == InteractionKind.CLICK:
-            positive_vectors.append(event_embedding)
+            positive_interacted_events_ids.append(interaction.event_id.hex)
         elif interaction.interaction_type == InteractionKind.LIKE:
-            positive_vectors.append(event_embedding * explicit_coefficient)
+            positive_interacted_events_ids.extend([interaction.event_id.hex] * explicit_coefficient)
         elif interaction.interaction_type == InteractionKind.DISLIKE:
-            negative_vectors.append(event_embedding * explicit_coefficient)
-
-    if len(positive_vectors) == 0 or len(negative_vectors) == 0:
-        return []
-
-    positive_vector: np.ndarray = sum(positive_vectors) / len(positive_vectors)
-    negative_vector: np.ndarray = sum(negative_vectors) / len(negative_vectors)
+            negative_interacted_events_ids.extend([interaction.event_id.hex] * explicit_coefficient)
 
     # potentially vector search can return events, that was interacted by user
     # then we need to remove those events from candidates list
     limit = len(interacted_events_ids) + 10  # we need at least 10 events that user don't interacted
 
     result = await vectordb_client.search_by_pos_neg_vectors(
-        positive_vector,
-        negative_vector,
+        positive_interacted_events_ids,
+        negative_interacted_events_ids,
         limit,
     )
 
@@ -134,7 +121,10 @@ async def get_collaborative_dssm_candidates(
 
     users_interacted_same_events = itertools.chain.from_iterable(users_interacted_same_events)
 
-    users_ids_interacted_same_events = {interaction.user_id for interaction in users_interacted_same_events}
+    users_ids_interacted_same_events = {
+        interaction.user_id for interaction in users_interacted_same_events
+        if interaction.user_id != user_id
+    }
     similar_users_embeddings = await vectordb_client.get_users_vectors_by_ids(users_ids_interacted_same_events)
 
     # 3. calculate average vector for those users
@@ -280,7 +270,7 @@ async def get_recommendation_for_user_query(user_id: int, user_query: str | None
     # 2. compose recommendation
     recommendation = compose_recommendation_from_candidates_groups(
         candidates_by_groups,
-        1,
+        2,
         10,
     )
 

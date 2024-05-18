@@ -93,19 +93,19 @@ services:
 #      - capybanse-container-network
 #    env_file: capybanse.env
 #
-  capybanse_rec_service:
-#    image: "ideeockus/capybanse_rec_service:latest"
-    image: "capybanse_rec_service:latest"
-
-    container_name: rec_service
-    restart: always
-    depends_on:
-      - postgres
-      - rabbitmq
-      - qdrant
-    networks:
-      - capybanse-container-network
-    env_file: capybanse.env
+#  capybanse_rec_service:
+##    image: "ideeockus/capybanse_rec_service:latest"
+#    image: "capybanse_rec_service:latest"
+#
+#    container_name: rec_service
+#    restart: always
+#    depends_on:
+#      - postgres
+#      - rabbitmq
+#      - qdrant
+#    networks:
+#      - capybanse-container-network
+#    env_file: capybanse.env
 #
 #  capybanse_tg_bot:
 #    image: "ideeockus/capybanse_resonanse_bot:latest"

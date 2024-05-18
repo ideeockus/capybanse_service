@@ -131,10 +131,12 @@ class VectorDB:
 
     async def search_by_pos_neg_vectors(
             self,
-            positive: list[float] | np.ndarray,
-            negative: list[float] | np.ndarray,
+            positive: list[str] | None,
+            negative: list[str] | None,
             limit: int,
     ) -> list[tuple[float, EventData]]:
+        if not positive and not negative:
+            return []
         request_dt = datetime.now()
 
         scored_points = await self._qdrant_client.recommend(
@@ -168,6 +170,7 @@ class VectorDB:
             collection_name=QDRANT_EVENTS_COLLECTION,
             ids=[event_id.hex for event_id in events_ids],
             with_payload=False,
+            with_vectors=True,
         )
 
         vectors: list[np.ndarray] = [
@@ -202,6 +205,7 @@ class VectorDB:
             collection_name=QDRANT_USERS_COLLECTION,
             ids=list(users_ids),
             with_payload=False,
+            with_vectors=True,
         )
 
         vectors: list[np.ndarray] = [
