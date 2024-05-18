@@ -34,7 +34,6 @@ class TimepadParser(EventsParser):
 
     async def _get_timepad_event(self, event_id: str) -> dict:
         event_url = API_URL + '/events/' + event_id
-        logger.warning('event_url %s', event_url)
         async with AsyncClient(**self.get_httpx_client_params()) as client:
             response = await client.get(event_url)
             logger.debug('got event response %s', response)
@@ -66,6 +65,9 @@ class TimepadParser(EventsParser):
                 events_json = [
                     await self._get_timepad_event(event['id']) for event in events
                 ]
+
+                if len(events_json) == 0:
+                    return None
 
                 parsed_events = parse_timepad_response_as_events_data(events_json)
 

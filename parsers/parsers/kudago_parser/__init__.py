@@ -7,9 +7,9 @@ from httpx import AsyncClient
 
 from common import models
 from common.models import EventData
+from common.utils import get_logger
 from parsers import storage
 from parsers.common_parser import EventsParser
-from common.utils import get_logger
 from parsers.utils import get_service_id
 from parsers.utils import get_today_dt
 from parsers.utils import retry
@@ -60,6 +60,9 @@ class KudagoParser(EventsParser):
             logger.debug('got events response %s', response)
             if response.is_success:
                 response_json = response.json()
+                if len(response_json['results']) == 0:
+                    return None
+
                 parsed_events = parse_kudago_response_as_events_data(response_json)
 
                 self.page += 1
