@@ -94,6 +94,10 @@ CITY_CODE_TO_NAME_MAP = {
     'kev': 'Киев',
     'new-york': 'Нью-Йорк',
     'london': 'Лондон',
+    'atlanta': 'Атланта',
+    'mns': 'Минск',
+    'ryazan': 'Рязань',
+    'singapore': 'Сингапур',
 }
 
 

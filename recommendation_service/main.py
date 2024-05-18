@@ -142,6 +142,9 @@ RPC_QUEUE_HANDLERS = {
 
 
 async def main() -> None:
+    # init clickhouse
+    await VectorDB.get_client(QDRANT_HOST, QDRANT_PORT)
+
     connection = await aio_pika.connect_robust(
         host=RABBITMQ_HOST,
         login=RABBITMQ_USER,

@@ -188,11 +188,60 @@ def rescore_with_exponential_decay(candidates: RecommendationList) -> Recommenda
 
 
 def get_top_k(candidates: RecommendationList, limit: int) -> RecommendationList:
+    """
+    sort candidates by score and return K candidates
+    :param candidates:
+    :param limit: amount of items
+    :return:
+    """
     return sorted(
         candidates,
         key=lambda candidate: t.cast(RecItem, candidate).score,
         reverse=True,
     )[:limit]
+
+
+def compose_recommendation_from_candidates_groups(
+        candidates_by_groups: list[list[RecItem]],
+        min_by_group: int,
+        limit: int,
+) -> list[RecItem]:
+    """
+    Rescores candidates and compose balanced sorted list of recommendations
+    :param candidates_by_groups: list of recommendations by subsystem
+    :param min_by_group: minimum amount of items from each group
+    :param limit: amount of items in final result
+    :return:
+    """
+    # 1. rescore candidates and take min amount from each group
+    rescored_candidates_by_groups = []
+    for candidates_group in candidates_by_groups:
+        rescored_candidates = rescore_randomized(
+            rescore_with_exponential_decay(
+                candidates_group
+            )
+        )
+        sorted_rescored_candidates = get_top_k(rescored_candidates, limit)
+        rescored_candidates_by_groups.append(sorted_rescored_candidates)
+
+    selected_candidates = []
+    for index in range(min_by_group):
+        for candidates_group in rescored_candidates_by_groups:
+            if len(candidates_group) > 0:
+                selected_item = candidates_group.pop(0)
+                selected_candidates.append(selected_item)
+
+    # 2. get top k candidates from remained
+    remained = limit - len(selected_candidates)
+    if remained > 0:
+        other_candidates: list[RecItem] = itertools.chain.from_iterable(rescored_candidates_by_groups)
+        selected_candidates.extend(get_top_k(
+            other_candidates,
+            remained
+        ))
+    elif remained < 0:
+        selected_candidates = selected_candidates[:-remained]
+    return selected_candidates
 
 
 async def get_recommendation_for_user_query(user_id: int, user_query: str | None) -> RecommendationList:
@@ -204,7 +253,6 @@ async def get_recommendation_for_user_query(user_id: int, user_query: str | None
     )
 
     # 1. get candidates
-
     basic_candidates = []
     if user_query is not None:
         basic_candidates = await get_static_dssm_candidates(
@@ -223,21 +271,18 @@ async def get_recommendation_for_user_query(user_id: int, user_query: str | None
         user_id,
     )
 
-    # 2. rescore candidates
-    all_candidates = [
-        *basic_candidates,
-        *dynamic_candidates,
-        *collaborative_candidates,
+    candidates_by_groups = [
+        basic_candidates,
+        dynamic_candidates,
+        collaborative_candidates,
     ]
 
-    rescored_candidates = rescore_randomized(
-        rescore_with_exponential_decay(
-            all_candidates
-        )
+    # 2. compose recommendation
+    recommendation = compose_recommendation_from_candidates_groups(
+        candidates_by_groups,
+        1,
+        10,
     )
-
-    # 3. get top k candidates
-    recommendation = get_top_k(rescored_candidates, 10)
 
     # 4. save recommendation
     await clickhouse_client.insert_given_recommendation(

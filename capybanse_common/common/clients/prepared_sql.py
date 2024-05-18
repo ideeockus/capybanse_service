@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS resonanse_users (
 
 CREATE_USERS_INTERACTION_TABLE = '''
 CREATE TABLE IF NOT EXISTS users_interactions (
-    user_id UInt64,
+    user_id Int64,
     event_id UUID,
     interaction_type String,
     interaction_dt DateTime
@@ -82,7 +82,7 @@ ORDER BY interaction_dt;
 
 CREATE_GIVEN_RECOMMENDATIONS_TABLE = '''
 CREATE TABLE IF NOT EXISTS given_recommendations (
-    user_id UInt64,
+    user_id Int64,
     recommended_events Array(Tuple(event_id UUID, subsystem_kind String, score Float32)),
     recommendation_dt DateTime
 )
