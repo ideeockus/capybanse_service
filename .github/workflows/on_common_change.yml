@@ -34,7 +34,7 @@ jobs:
           file: ./capybanse_common/Dockerfile
           push: false
           load: true
-          tags: ideeockus/capybanse_common:local
+          tags: capybanse_common
           outputs: type=docker,dest=/tmp/capybanse_common.tar
 
       - name: Upload capybanse_common artifaact
