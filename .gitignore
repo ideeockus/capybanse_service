@@ -1,5 +1,6 @@
 .idea
 capybanse_storage
+capybanse.env
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
