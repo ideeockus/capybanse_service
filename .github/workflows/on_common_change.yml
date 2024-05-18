@@ -36,6 +36,8 @@ jobs:
           load: true
           tags: capybanse_common
           outputs: type=docker,dest=/tmp/capybanse_common.tar
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,mode=max,dest=/tmp/.buildx-cache
 
       - name: Upload capybanse_common artifaact
         uses: actions/upload-artifact@v4
@@ -87,6 +89,8 @@ jobs:
           file: ${{ matrix.context }}/Dockerfile
           push: true
           tags: ${{ matrix.image }}:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,mode=max,dest=/tmp/.buildx-cache
 
       - name: Clean up
         run: docker rmi ${{ matrix.image }}:latest
