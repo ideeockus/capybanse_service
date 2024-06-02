@@ -44,6 +44,10 @@ class KudagoParser(EventsParser):
     def parser_name():
         return 'kudago'
 
+    async def _reset_state(self):
+        self.page = 1
+        storage.set_state(KudagoParser.PAGE_STATE_KEY, str(1))
+
     @retry(times=3)
     async def _get_next_events(self) -> t.Iterable[EventData] | None:
         base_url = API_URL + '/events/'
@@ -75,8 +79,7 @@ class KudagoParser(EventsParser):
                     response.text
                 )
 
-        # reset state
-        storage.set_state(KudagoParser.PAGE_STATE_KEY, str(1))
+        await self._reset_state()
         return None
 
 

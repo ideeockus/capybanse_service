@@ -29,9 +29,14 @@ from recsys_service.config import QDRANT_PORT
 
 async def get_static_dssm_candidates(
         vectordb_client: VectorDB,
-        user_query: str,
+        user_id: int,
 ) -> RecommendationList:
-    result = await vectordb_client.search_event_by_request(user_query, 10)
+    user_embeddings = await vectordb_client.get_users_vectors_by_ids({user_id})
+    user_embedding = next(iter(user_embeddings), None)
+    if user_embedding is None:
+        return []
+
+    result = await vectordb_client.search_event_by_vector(user_embedding, 10)
     return [
         RecItem(
             subsystem=RecSubsystem.BASIC,
@@ -53,7 +58,13 @@ async def get_dynamic_dssm_candidates(
     """
     last_week = datetime.now() - timedelta(days=7)
     considered_interactions = 100
-    explicit_coefficient = 5  # value multiplier for explicit feedback
+
+    implicit_coefficient = 0.4
+    explicit_coefficient = 2  # value multiplier for explicit feedback
+
+    # user embedding from description or None if no description
+    user_embeddings = await vectordb_client.get_users_vectors_by_ids({user_id})
+    user_embedding = next(iter(user_embeddings), None)
 
     interactions = await clickhouse_client.get_interactions_by_user(
         user_id,
@@ -62,27 +73,44 @@ async def get_dynamic_dssm_candidates(
     )
 
     interacted_events_ids = {interaction.event_id for interaction in interactions}
+    interacted_events_embeddings = await vectordb_client.get_events_vectors_by_ids(interacted_events_ids)
+    interacted_events_embeddings_by_id: dict[UUID, np.ndarray] = {
+        event_id: embedding
+        for event_id, embedding in zip(interacted_events_ids, interacted_events_embeddings)
+    }
 
-    positive_interacted_events_ids = []
-    negative_interacted_events_ids = []
+    positive_vectors = []
+    negative_vectors = []
 
     for interaction in interactions:
+        event_embedding = interacted_events_embeddings_by_id[interaction.event_id]
         if interaction.interaction_type == InteractionKind.CLICK:
-            positive_interacted_events_ids.append(interaction.event_id.hex)
+            positive_vectors.append(event_embedding * implicit_coefficient)
         elif interaction.interaction_type == InteractionKind.LIKE:
-            positive_interacted_events_ids.extend([interaction.event_id.hex] * explicit_coefficient)
+            positive_vectors.append(event_embedding * explicit_coefficient)
         elif interaction.interaction_type == InteractionKind.DISLIKE:
-            negative_interacted_events_ids.extend([interaction.event_id.hex] * explicit_coefficient)
+            negative_vectors.append(event_embedding * explicit_coefficient)
+
+    if len(positive_vectors) == 0 or len(negative_vectors) == 0:
+        return []
+
+    positive_vector: np.ndarray = sum(positive_vectors) / len(positive_vectors)
+    negative_vector: np.ndarray = sum(negative_vectors) / len(negative_vectors)
+
+    if user_embedding is None:
+        dynamic_vector = (user_embedding + positive_vector + negative_vector) / 3
+    else:
+        dynamic_vector = (positive_vector + negative_vector) / 2
+
+    if not any(dynamic_vector):
+        # all zeros, should skip
+        return []
 
     # potentially vector search can return events, that was interacted by user
     # then we need to remove those events from candidates list
     limit = len(interacted_events_ids) + 10  # we need at least 10 events that user don't interacted
 
-    result = await vectordb_client.search_by_pos_neg_vectors(
-        positive_interacted_events_ids,
-        negative_interacted_events_ids,
-        limit,
-    )
+    result = await vectordb_client.search_event_by_vector(dynamic_vector, limit)
 
     return [
         RecItem(
@@ -111,10 +139,6 @@ async def get_collaborative_dssm_candidates(
     interacted_events_ids = {interaction.event_id for interaction in interactions}
 
     # 2. get users who made same clicks
-    # users_interacted_same_events: t.Iterable[UserInteraction] = itertools.chain.from_iterable((
-    #     await clickhouse_client.get_interactions_by_event(event_id, last_week, 10)
-    #     for event_id in interacted_events_ids
-    # ))
     users_interacted_same_events = []
     for event_id in interacted_events_ids:
         users_interacted_same_events.append(await clickhouse_client.get_interactions_by_event(event_id, last_week, 10))
@@ -165,6 +189,12 @@ def adjust_recommendation_with_time_decay(
 
     return candidate
 
+def get_candidates_events_ids(candidates: list[RecItem]) -> list[UUID]:
+    return [
+        selected_candidate.event.id
+        for selected_candidate in candidates
+    ]
+
 
 def rescore_with_exponential_decay(candidates: RecommendationList) -> RecommendationList:
     request_dt = datetime.now()
@@ -177,18 +207,35 @@ def rescore_with_exponential_decay(candidates: RecommendationList) -> Recommenda
     return candidates
 
 
-def get_top_k(candidates: RecommendationList, limit: int) -> RecommendationList:
+def get_top_k(candidates: RecommendationList, limit: int, exclude: list[UUID]) -> RecommendationList:
     """
     sort candidates by score and return K candidates
     :param candidates:
     :param limit: amount of items
+    :param exclude: events to exclude from top k
     :return:
     """
-    return sorted(
-        candidates,
+    selected_candidates = []
+
+    filtered_candidates = filter(
+        lambda candidate: t.cast(RecItem, candidate).event.id,
+        candidates
+    )
+    sorted_candidates = sorted(
+        filtered_candidates,
         key=lambda candidate: t.cast(RecItem, candidate).score,
         reverse=True,
-    )[:limit]
+    )
+
+    for candidate in sorted_candidates:
+        if t.cast(RecItem, candidate).event.id in get_candidates_events_ids(selected_candidates):
+            continue
+
+        selected_candidates.append(candidate)
+        if len(selected_candidates) >= limit:
+            break
+
+    return selected_candidates
 
 
 def compose_recommendation_from_candidates_groups(
@@ -217,9 +264,10 @@ def compose_recommendation_from_candidates_groups(
     selected_candidates = []
     for index in range(min_by_group):
         for candidates_group in rescored_candidates_by_groups:
-            if len(candidates_group) > 0:
-                selected_item = candidates_group.pop(0)
-                selected_candidates.append(selected_item)
+            for candidate in candidates_group:
+                if candidate.event.id not in get_candidates_events_ids(selected_candidates):
+                    selected_candidates.append(candidate)
+                    break
 
     # 2. get top k candidates from remained
     remained = limit - len(selected_candidates)
@@ -227,14 +275,15 @@ def compose_recommendation_from_candidates_groups(
         other_candidates: list[RecItem] = itertools.chain.from_iterable(rescored_candidates_by_groups)
         selected_candidates.extend(get_top_k(
             other_candidates,
-            remained
+            remained,
+            exclude=get_candidates_events_ids(selected_candidates),
         ))
     elif remained < 0:
         selected_candidates = selected_candidates[:-remained]
     return selected_candidates
 
 
-async def get_recommendation_for_user_query(user_id: int, user_query: str | None) -> RecommendationList:
+async def get_recommendation_for_user_query(user_id: int) -> RecommendationList:
     vectordb_client = await VectorDB.get_client(QDRANT_HOST, QDRANT_PORT)
     clickhouse_client = await ClickHouseDB.get_client(
         CLICKHOUSE_HOST,
@@ -243,23 +292,28 @@ async def get_recommendation_for_user_query(user_id: int, user_query: str | None
     )
 
     # 1. get candidates
-    basic_candidates = []
-    if user_query is not None:
-        basic_candidates = await get_static_dssm_candidates(
-            vectordb_client,
-            user_query,
-        )
+    basic_candidates = await get_static_dssm_candidates(
+        vectordb_client,
+        user_id,
+    )
 
+    DYNAMIC_REC_COEFFICIENT = 0.8  # noqa
     dynamic_candidates = await get_dynamic_dssm_candidates(
         vectordb_client,
         clickhouse_client,
         user_id,
     )
+    for dynamic_candidate in dynamic_candidates:
+        dynamic_candidate.score *= DYNAMIC_REC_COEFFICIENT
+
+    COLLABORATIVE_REC_COEFFICIENT = 0.9  # noqa
     collaborative_candidates = await get_collaborative_dssm_candidates(
         vectordb_client,
         clickhouse_client,
         user_id,
     )
+    for collaborative_candidate in collaborative_candidates:
+        collaborative_candidate.score *= COLLABORATIVE_REC_COEFFICIENT
 
     candidates_by_groups = [
         basic_candidates,
@@ -292,8 +346,6 @@ async def get_recommendation_for_user(user_id: int) -> RecommendationList:
         pg_db=POSTGRES_DB,
     )
 
-    user_description = await postgres_client.fetch_description_by_user_id(user_id)
     return await get_recommendation_for_user_query(
         user_id,
-        user_description,
     )

@@ -32,6 +32,10 @@ class TimepadParser(EventsParser):
     def parser_name():
         return 'timepad'
 
+    async def _reset_state(self):
+        self.page = 1
+        storage.set_state(TimepadParser.PAGE_STATE_KEY, str(1))
+
     async def _get_timepad_event(self, event_id: str) -> dict:
         event_url = API_URL + '/events/' + event_id
         async with AsyncClient(**self.get_httpx_client_params()) as client:
@@ -81,6 +85,7 @@ class TimepadParser(EventsParser):
                     response.text,
                 )
 
+        await self._reset_state()
         return None
 
 
