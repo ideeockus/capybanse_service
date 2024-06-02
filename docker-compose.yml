@@ -67,6 +67,7 @@ services:
 
   capybanse_event_parser:
     image: "ideeockus/capybanse_event_parser:latest"
+#    image: "capybanse_event_parser:latest"
 
     container_name: event_parser
     restart: always
@@ -94,8 +95,8 @@ services:
     env_file: capybanse.env
 
   capybanse_rec_service:
-#    image: "ideeockus/capybanse_rec_service:latest"
-    image: "capybanse_rec_service:latest"
+    image: "ideeockus/capybanse_rec_service:latest"
+#    image: "capybanse_rec_service:latest"
 
     container_name: rec_service
     restart: always

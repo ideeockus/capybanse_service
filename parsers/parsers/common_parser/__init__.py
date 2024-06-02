@@ -8,10 +8,8 @@ from datetime import datetime
 import aio_pika
 
 from common.models import EventData
-from parsers.config import RABBITMQ_HOST
 from common.utils import get_logger
-from parsers.config import RABBITMQ_PASSWORD
-from parsers.config import RABBITMQ_USER
+from parsers.config import RABBITMQ_HOST
 
 logger = get_logger('common_parser')
 PARSING_INTERVAL = 3600 * 3  # 3 hours
@@ -36,6 +34,10 @@ class EventsParser(ABC):
 
     @abstractmethod
     async def _get_next_events(self) -> t.Iterable[EventData] | None:
+        ...
+
+    @abstractmethod
+    async def _reset_state(self) -> None:
         ...
 
     async def run_parsing(self):
@@ -74,6 +76,7 @@ class EventsParser(ABC):
 
             try:
                 await self.run_parsing()
+                await self._reset_state()
             except (ConnectionRefusedError, aio_pika.AMQPException) as err:
                 logger.exception('Connection error', err)
                 time.sleep(10)

@@ -189,6 +189,7 @@ def adjust_recommendation_with_time_decay(
 
     return candidate
 
+
 def get_candidates_events_ids(candidates: list[RecItem]) -> list[UUID]:
     return [
         selected_candidate.event.id
@@ -207,7 +208,7 @@ def rescore_with_exponential_decay(candidates: RecommendationList) -> Recommenda
     return candidates
 
 
-def get_top_k(candidates: RecommendationList, limit: int, exclude: list[UUID]) -> RecommendationList:
+def get_top_k(candidates: RecommendationList, limit: int, exclude=None) -> RecommendationList:
     """
     sort candidates by score and return K candidates
     :param candidates:
@@ -215,6 +216,8 @@ def get_top_k(candidates: RecommendationList, limit: int, exclude: list[UUID]) -
     :param exclude: events to exclude from top k
     :return:
     """
+    if exclude is None:
+        exclude = []
     selected_candidates = []
 
     filtered_candidates = filter(
@@ -228,7 +231,11 @@ def get_top_k(candidates: RecommendationList, limit: int, exclude: list[UUID]) -
     )
 
     for candidate in sorted_candidates:
-        if t.cast(RecItem, candidate).event.id in get_candidates_events_ids(selected_candidates):
+        candidate = t.cast(RecItem, candidate)
+        if candidate.event.id in [
+            *get_candidates_events_ids(selected_candidates),
+            *exclude,
+        ]:
             continue
 
         selected_candidates.append(candidate)
@@ -297,7 +304,7 @@ async def get_recommendation_for_user_query(user_id: int) -> RecommendationList:
         user_id,
     )
 
-    DYNAMIC_REC_COEFFICIENT = 0.8  # noqa
+    DYNAMIC_REC_COEFFICIENT = 0.97  # noqa
     dynamic_candidates = await get_dynamic_dssm_candidates(
         vectordb_client,
         clickhouse_client,
@@ -306,7 +313,7 @@ async def get_recommendation_for_user_query(user_id: int) -> RecommendationList:
     for dynamic_candidate in dynamic_candidates:
         dynamic_candidate.score *= DYNAMIC_REC_COEFFICIENT
 
-    COLLABORATIVE_REC_COEFFICIENT = 0.9  # noqa
+    COLLABORATIVE_REC_COEFFICIENT = 0.99  # noqa
     collaborative_candidates = await get_collaborative_dssm_candidates(
         vectordb_client,
         clickhouse_client,

@@ -85,7 +85,6 @@ class TimepadParser(EventsParser):
                     response.text,
                 )
 
-        await self._reset_state()
         return None
 
 
