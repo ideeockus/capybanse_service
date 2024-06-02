@@ -59,12 +59,8 @@ async def get_dynamic_dssm_candidates(
     last_week = datetime.now() - timedelta(days=7)
     considered_interactions = 100
 
-    implicit_coefficient = 0.4
-    explicit_coefficient = 2  # value multiplier for explicit feedback
-
-    # user embedding from description or None if no description
-    user_embeddings = await vectordb_client.get_users_vectors_by_ids({user_id})
-    user_embedding = next(iter(user_embeddings), None)
+    implicit_coefficient = 0.2
+    explicit_coefficient = 1  # value multiplier for explicit feedback
 
     interactions = await clickhouse_client.get_interactions_by_user(
         user_id,
@@ -91,26 +87,28 @@ async def get_dynamic_dssm_candidates(
         elif interaction.interaction_type == InteractionKind.DISLIKE:
             negative_vectors.append(event_embedding * explicit_coefficient)
 
-    if len(positive_vectors) == 0 or len(negative_vectors) == 0:
+    if len(positive_vectors) == 0 and len(negative_vectors) == 0:
         return []
 
-    positive_vector: np.ndarray = sum(positive_vectors) / len(positive_vectors)
-    negative_vector: np.ndarray = sum(negative_vectors) / len(negative_vectors)
+    # then count dynamic_embedding
 
-    if user_embedding is None:
-        dynamic_vector = (user_embedding + positive_vector + negative_vector) / 3
-    else:
-        dynamic_vector = (positive_vector + negative_vector) / 2
+    # user embedding from description or None if no description
+    user_embeddings = await vectordb_client.get_users_vectors_by_ids({user_id})
+    user_embedding = next(iter(user_embeddings), None)
 
-    if not any(dynamic_vector):
-        # all zeros, should skip
-        return []
+    dynamic_embeddings_summed = sum(positive_vectors) + sum(negative_vectors)
+    dynamic_embeddings_amount = len(positive_vectors) + len(negative_vectors)
+    if user_embedding is not None:
+        dynamic_embeddings_summed += user_embedding
+        dynamic_embeddings_amount += 1
+
+    dynamic_embedding = dynamic_embeddings_summed / dynamic_embeddings_amount
 
     # potentially vector search can return events, that was interacted by user
     # then we need to remove those events from candidates list
     limit = len(interacted_events_ids) + 10  # we need at least 10 events that user don't interacted
 
-    result = await vectordb_client.search_event_by_vector(dynamic_vector, limit)
+    result = await vectordb_client.search_event_by_vector(dynamic_embedding, limit)
 
     return [
         RecItem(
@@ -304,7 +302,7 @@ async def get_recommendation_for_user_query(user_id: int) -> RecommendationList:
         user_id,
     )
 
-    DYNAMIC_REC_COEFFICIENT = 0.97  # noqa
+    DYNAMIC_REC_COEFFICIENT = 0.95  # noqa
     dynamic_candidates = await get_dynamic_dssm_candidates(
         vectordb_client,
         clickhouse_client,
