@@ -12,7 +12,7 @@ services:
     restart: always
     networks:
       - capybanse-container-network
-    # env_file: capybanse.env
+    env_file: ../files/capybanse.env
 
   rabbitmq:
     image: "rabbitmq:management"
@@ -76,7 +76,7 @@ services:
       - rabbitmq
     networks:
       - capybanse-container-network
-    # env_file: capybanse.env
+    env_file: ../files/capybanse.env
 #
   capybanse_event_handler:
     image: "ideeockus/capybanse_event_handler:latest"
@@ -92,7 +92,7 @@ services:
       - qdrant
     networks:
       - capybanse-container-network
-    # env_file: capybanse.env
+    env_file: ../files/capybanse.env
 
   capybanse_rec_service:
     image: "ideeockus/capybanse_rec_service:latest"
@@ -106,7 +106,7 @@ services:
       - qdrant
     networks:
       - capybanse-container-network
-    # env_file: capybanse.env
+    env_file: ../files/capybanse.env
 
   capybanse_tg_bot:
     image: "ideeockus/capybanse_resonanse_bot:latest"
@@ -117,7 +117,7 @@ services:
       - rabbitmq
     networks:
       - capybanse-container-network
-    # env_file: capybanse.env
+    env_file: ../files/capybanse.env
 
 networks:
   capybanse-container-network:
