@@ -110,7 +110,7 @@ services:
 
   capybanse_tg_bot:
     image: "ideeockus/capybanse_resonanse_bot:latest"
-    container_name: tg_bot
+    container_name: capybanse_tg_bot
     restart: always
     depends_on:
       - postgres
